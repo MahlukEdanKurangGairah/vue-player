@@ -1,10 +1,10 @@
-# 🎬 VPlayer
+# 🎬 AdjadTeaPlayer
 
-> Minimal, sleek video & music player built with Electron — no bloat, just play.
+> VLC-style desktop media player built with Electron + Vue 3 + Tabler — minimal UI, maximum video.
 
 ![Electron](https://img.shields.io/badge/Electron-28-47848F?logo=electron)
-![Vue](https://img.shields.io/badge/Vue-3.4-4FC08D?logo=vue.js)
-![Vuetify](https://img.shields.io/badge/Vuetify-3.5-1867C0?logo=vuetify)
+![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vue.js)
+![Tabler](https://img.shields.io/badge/Tabler-1.4-0054a6?logo=tabler)
 ![Bun](https://img.shields.io/badge/Bun-latest-FBF0DF?logo=bun)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -14,20 +14,20 @@
 
 | | |
 |---|---|
-| 🎬 **Video Player** | Full HTML5 video with now-playing overlay |
-| 🎵 **Audio Player** | Artwork display + animated bar visualizer |
+| 🎬 **Video Player** | Full-screen HTML5 video, VLC-style auto-hiding controls |
+| 🎵 **Audio Player** | Artwork display + animated bar visualizer overlay |
 | 📂 **File Support** | MP4, WebM, MKV, AVI, MOV, MP3, FLAC, OGG, WAV, AAC, M4A, Opus |
-| 📋 **Playlist** | Add/remove/clear, click to play, alphabetical sort |
-| 📜 **History** | Last 50 played tracks in sidebar |
+| 📋 **Playlist** | Offcanvas drawer (right) — add/remove/clear, click to play |
+| 📜 **History** | Last 50 played tracks in offcanvas drawer |
 | 🔀 **Shuffle** | Randomize playback order |
 | 🔁 **Repeat** | Repeat all / Repeat one |
-| 🔊 **Volume** | Slider + mute toggle |
+| 🔊 **Volume** | Slider + mute toggle (remembers previous volume) |
 | ⏩ **Speed** | 0.25× to 2× playback rate |
 | 🖼 **Picture-in-Picture** | PiP for video (always on top) |
 | ⛶ **Fullscreen** | Toggle fullscreen mode |
 | 📥 **Drag & Drop** | Drop files directly from file manager |
 | ⌨️ **Keyboard Shortcuts** | Full keyboard control |
-| 🌙 **Dark Theme** | Material Design 3 dark theme (purple accent) |
+| 🌙 **Dark/Light Theme** | Toggle via View → Theme menu |
 
 ## 🚀 Quick Start
 
@@ -45,16 +45,14 @@ bun run start
 ## 📦 Build
 
 ```bash
+# Build for Linux (AppImage + .deb)
+bun run build:linux
+
 # Build all platforms
 bun run build
-
-# Platform-specific
-bun run build:linux    # AppImage + .deb
-bun run build:win      # NSIS installer
-bun run build:mac      # DMG
 ```
 
-Output goes to `dist/` folder. The renderer is built by Vite into `dist-app/` first, then packaged by electron-builder.
+Output goes to `dist/` folder.
 
 ## ⌨️ Keyboard Shortcuts
 
@@ -77,29 +75,37 @@ Output goes to `dist/` folder. The renderer is built by Vite into `dist-app/` fi
 ## 🧱 Project Structure
 
 ```
-vplayer/
+adjadteaplayer/
 ├── main.js              # Electron main process, menu, IPC, file dialogs
 ├── preload.js           # Context bridge (secure IPC to renderer)
 ├── index.html           # HTML entry point (mounts Vue app)
 ├── package.json         # Dependencies & build config
 ├── vite.config.js       # Vite config (Vue plugin, chunk splitting)
 ├── src/
-│   ├── main.js          # Vue app entry — creates Vuetify, mounts App
-│   └── App.vue          # Full UI: player, playlist, controls, history
+│   ├── main.js          # Vue app entry — imports Tabler CSS + Bootstrap JS
+│   └── App.vue          # Full UI: video area, controls overlay, playlist offcanvas
 ├── legacy/              # Original vanilla-JS implementation (reference only)
 │   ├── renderer.js
 │   └── style.css
-├── dist-app/            # Vite build output (committed, shipped in package)
-└── dist/                # electron-builder output (AppImage, .deb, .exe, .dmg)
+├── dist-app/            # Vite build output
+└── dist/                # electron-builder output (AppImage, .deb)
 ```
 
 ## 🛠️ Architecture
 
 ### Process Model
 
-- **Main Process** (`main.js`) — Window management, native menus, file dialogs, folder scanning, IPC handlers. All media extensions and dialog filters are defined once as shared constants.
+- **Main Process** (`main.js`) — Window management, native menus (File/Playback/View/Theme), file dialogs, folder scanning, IPC handlers
 - **Preload** (`preload.js`) — Exposes `window.electronAPI` via context bridge with whitelisted channels
-- **Renderer** — Vue 3 app built with Vite. Uses Vuetify 3 component library (Material Design 3). State managed via Vue Composition API (`ref`, `computed`, `watch`) in a single `<script setup>` block.
+- **Renderer** — Vue 3 app built with Vite. Uses Tabler CSS framework + Bootstrap 5. Tabler Icons rendered as Vue components (`@tabler/icons-vue`). State managed via Vue Composition API (`ref`, `computed`) in a single `<script setup>` block
+
+### UI Design
+
+- **VLC-style**: video fills entire window, no permanent chrome
+- **Auto-hiding controls overlay**: appears on mouse move, disappears after 2.5s idle
+- **Playlist**: Bootstrap offcanvas drawer slides from the right
+- **Progress bar**: full-width, green (`#39ff14`), 4px (6px on hover)
+- **Theme**: dark/light toggle via native menu (View → Theme), applied as `data-bs-theme`
 
 ### Security
 
@@ -113,28 +119,6 @@ vplayer/
 - **Dev**: `main.js` checks `VITE_DEV_SERVER_URL` env var; loads from `http://localhost:5173`
 - **Production**: loads `dist-app/index.html` from disk
 
-## 🎨 Theming
-
-VPlayer uses Vuetify's dark theme with a purple accent. Customize colors in `src/main.js`:
-
-```js
-const vuetify = createVuetify({
-  theme: {
-    defaultTheme: 'dark',
-    themes: {
-      dark: {
-        colors: {
-          background: '#0a0a0f',
-          surface: '#12121a',
-          primary: '#7c3aed',       // Change this
-          secondary: '#8b5cf6'      // And this
-        }
-      }
-    }
-  }
-});
-```
-
 ## 📝 Supported Formats
 
 ### Video
@@ -147,14 +131,15 @@ MP3, FLAC, OGG, WAV, AAC, M4A, Opus
 
 - **[Electron 28](https://www.electronjs.org/)** — Desktop app framework
 - **[Vue 3](https://vuejs.org/)** — UI framework (Composition API)
-- **[Vuetify 3](https://vuetifyjs.com/)** — Material Design 3 component library
+- **[Tabler](https://tabler.io/)** — Bootstrap 5 CSS framework + UI kit
+- **[Tabler Icons Vue](https://www.npmjs.com/package/@tabler/icons-vue)** — SVG icon components
 - **[Vite 5](https://vitejs.dev/)** — Build tool & dev server
 - **[Bun](https://bun.sh/)** — Package manager & runtime
 - **[electron-builder](https://www.electron.build/)** — Build/packaging
 
 ## 📄 License
 
-MIT © Omen
+MIT © AdjadTea
 
 ---
 

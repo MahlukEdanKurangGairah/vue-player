@@ -26,7 +26,7 @@ VPlayer is an Electron 28 desktop media player. It plays local video (MP4, WebM,
 
 2. **Preload** (`preload.js`) — Context bridge. Exposes `window.electronAPI` to the renderer with a whitelist of IPC channels (`playback-toggle`, `playback-stop`, `playlist-next`, `playlist-prev`, `files-opened`). This is the only bridge between main and renderer processes.
 
-3. **Renderer** — The UI is built with **Vue 3** (Composition API, `<script setup>`) and **Vuetify 3**. Vite compiles `src/main.js` (Vue app entry) and `src/App.vue` into `dist-app/`. The root `index.html` mounts `#app` and loads `src/main.js`.
+3. **Renderer** — The UI is built with **Vue 3** (Composition API, `<script setup>`) and **Tabler CSS** (Bootstrap 5) + **Tabler Icons Vue** for SVG icon components. Vite compiles `src/main.js` (Vue app entry) and `src/App.vue` into `dist-app/`. The root `index.html` mounts `#app` and loads `src/main.js`. Tabler Icons are imported as Vue components from `@tabler/icons-vue`.
 
 **Security model (enforced, do not weaken):**
 - `nodeIntegration: false` — no Node.js APIs in renderer
@@ -45,14 +45,20 @@ VPlayer is an Electron 28 desktop media player. It plays local video (MP4, WebM,
 - Two hidden media elements coexist: `<video ref="videoPlayer">` and `<audio ref="audioPlayer">`. Only one is active at a time, switched by `isVideo` ref
 - `getActiveMedia()` returns whichever element is currently in use
 - Media files are loaded via `file://` protocol URLs
-- `playedHistory` tracks the last 50 played items (displayed in the left navigation drawer)
+- `playedHistory` tracks the last 50 played items (displayed in the offcanvas drawer)
+- **VLC-style controls**: auto-hiding overlay (2.5s idle timer), `controlsVisible` ref, `wakeControls()`/`startHideTimer()`/`resetHideTimer()`
+- **Playlist**: Bootstrap offcanvas (`bootstrap.Offcanvas`) slides from right, toggled via `openPlaylist()`
+- **Theme**: dark/light via `data-bs-theme` attribute on root div, toggled from native menu → `currentTheme` ref
+- **Icons**: Tabler Icons used as Vue components (`IconPlayerPlayFilled`, `IconVolume`, etc.) imported from `@tabler/icons-vue`
+- **Toast**: Bootstrap toast for error messages, initialized in `onMounted`
 - Drag-and-drop uses a counter (`dragCounter`) to handle nested drag enter/leave events correctly
 - Keyboard shortcuts are handled on `document.keydown` (skip if target is `INPUT`)
 - Menu events from the main process are subscribed via `window.electronAPI.onMenuAction()`
+- Progress bar color is hardcoded: `#39ff14` (green stabilo)
 
 ## Build output
 
 - `dist-app/` — Vite build output (renderer), checked into source control and included in packaged app
 - `dist/` — electron-builder output (AppImage, .deb, .exe, .dmg)
 
-In `vite.config.js`, the build splits `vuetify` and `vue` into separate manual chunks for caching. The Vite dev server runs on port 5173 with `strictPort: true`.
+In `vite.config.js`, the build splits `vue` into a separate manual chunk for caching. The Vite dev server runs on port 5173 with `strictPort: true`. `@tabler/icons-vue` tree-shakes automatically — only imported icons are bundled (6,220 modules at build time, ~110 KB JS output).

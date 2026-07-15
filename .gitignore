@@ -5,5 +5,7 @@ dist-app/
 .env
 .env.*
 run-claude-code.sh
+github-repo
+github-token
 .DS_Store
 Thumbs.db
