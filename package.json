@@ -1,0 +1,67 @@
+{
+  "name": "adjadteaplayer",
+  "version": "1.0.0",
+  "description": "AdjadTea Video & Music Player — minimal, sleek, local media player",
+  "main": "main.js",
+  "scripts": {
+    "dev:renderer": "bunx vite",
+    "dev:electron": "VITE_DEV_SERVER_URL=http://localhost:5173 bunx electron .",
+    "dev": "bunx vite & sleep 2 && VITE_DEV_SERVER_URL=http://localhost:5173 bunx electron .",
+    "start": "bunx electron .",
+    "build:renderer": "bunx vite build",
+    "build": "bunx vite build && bunx electron-builder",
+    "build:win": "bunx vite build && bunx electron-builder --win",
+    "build:mac": "bunx vite build && bunx electron-builder --mac",
+    "build:linux": "bunx vite build && bunx electron-builder --linux"
+  },
+  "author": {
+    "name": "AdjadTea",
+    "email": "adjadtea@gmail.com"
+  },
+  "homepage": "https://github.com/MahlukEdanKurangGairah/adjadteaplayer",
+  "license": "MIT",
+  "dependencies": {
+    "@tabler/core": "^1.4.0",
+    "@tabler/icons-vue": "^3.44.0",
+    "vue": "^3.5.39"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3",
+    "vite": "^5.4.21"
+  },
+  "build": {
+    "appId": "com.adjadtea.vplayer",
+    "productName": "AdjadTeaPlayer",
+    "copyright": "Copyright © 2026 AdjadTea",
+    "npmRebuild": false,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "dist-app/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icon.icns"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build/icon.png"
+    }
+  }
+}

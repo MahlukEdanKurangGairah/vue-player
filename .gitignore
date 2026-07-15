@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-app/
+*.log
+.env
+.env.*
+run-claude-code.sh
+.DS_Store
+Thumbs.db
