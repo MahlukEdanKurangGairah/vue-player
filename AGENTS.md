@@ -37,13 +37,22 @@ VPlayer is an Electron 28 desktop media player. Three processes:
 ## State management
 
 - All state is in `src/App.vue` via Vue `ref()` in a single `<script setup>`. No Pinia/store.
+- `currentView` ref switches between `player` / `image` / `photogrid` / `pdf`. The video/audio/controls overlay uses `v-show` on `currentView === 'player'` to stay in DOM when hidden.
 - Two hidden media elements coexist: `<video ref="videoPlayer">` and `<audio ref="audioPlayer">`. Use `getActiveMedia()` to get the active one. Only one plays at a time, switched by `isVideo` ref.
-- Media files load via `file://` protocol URLs.
+- Media files load via `file://` protocol URLs. Images use `file://` in `<img src>`. PDFs are read via IPC (`fs:readFile`) and rendered with pdfjs-dist to `<canvas>`.
+
+## View modes
+
+- **Image viewer** — fullscreen single image with prev/next nav. Activated when a single image file is opened.
+- **Photo grid** — CSS grid of thumbnails (`imageGallery` ref). Activated when opening a folder of images or multiple image files.
+- **PDF reader** — pdfjs-dist renders pages to canvas. Navigate with prev/next page, zoom in/out (`pdfScale` ref). Activated when a `.pdf` file is opened.
+- **Player** — audio/video (existing behavior). `handleFiles()` in App.vue routes files by type.
 
 ## Dependencies
 
 - `@tabler/icons-vue` tree-shakes automatically — only imported icons are bundled
 - `bootstrap` JS (tooltips, offcanvas, toast) is imported directly in `src/main.js` as a transitive dependency of `@tabler/core`. It is NOT a direct dependency in `package.json`.
+- `pdfjs-dist` renders PDFs. Worker is imported via `?url` in Vite: `import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'`. The worker chunk (~1.2 MB) is output to `dist-app/assets/`.
 - `electron-builder` config lives under `"build"` key in `package.json`
 
 ## Legacy code

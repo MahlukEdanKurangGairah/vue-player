@@ -10,13 +10,18 @@ const MEDIA_EXTENSIONS = {
   audio: ['mp3', 'flac', 'ogg', 'wav', 'aac', 'm4a', 'opus']
 };
 
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'];
+const PDF_EXTENSIONS = ['pdf'];
+
 const ALL_EXTENSIONS = [...MEDIA_EXTENSIONS.video, ...MEDIA_EXTENSIONS.audio];
-const ALL_EXTENSIONS_DOT = ALL_EXTENSIONS.map(ext => `.${ext}`);
+const ALL_SCAN_EXTENSIONS = [...ALL_EXTENSIONS, ...IMAGE_EXTENSIONS, ...PDF_EXTENSIONS];
+const ALL_SCAN_EXTENSIONS_DOT = ALL_SCAN_EXTENSIONS.map(ext => `.${ext}`);
 
 const FILE_FILTERS = [
-  { name: 'Media Files', extensions: ALL_EXTENSIONS },
+  { name: 'Media & Images', extensions: [...ALL_EXTENSIONS, ...IMAGE_EXTENSIONS, ...PDF_EXTENSIONS] },
   { name: 'Video Files', extensions: MEDIA_EXTENSIONS.video },
   { name: 'Audio Files', extensions: MEDIA_EXTENSIONS.audio },
+  { name: 'Image Files', extensions: IMAGE_EXTENSIONS },
   { name: 'All Files', extensions: ['*'] }
 ];
 
@@ -46,7 +51,7 @@ function scanDir(dir) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         files = files.concat(scanDir(fullPath));
-      } else if (ALL_EXTENSIONS_DOT.includes(path.extname(entry.name).toLowerCase())) {
+      } else if (ALL_SCAN_EXTENSIONS_DOT.includes(path.extname(entry.name).toLowerCase())) {
         files.push(fullPath);
       }
     }
@@ -160,6 +165,11 @@ ipcMain.handle('app:getPath', (event, name) => {
 
 ipcMain.handle('fs:fileExists', (event, filePath) => {
   return fs.existsSync(filePath);
+});
+
+ipcMain.handle('fs:readFile', async (event, filePath) => {
+  const buffer = await fs.promises.readFile(filePath);
+  return buffer;
 });
 
 // ── Window creation ──────────────────────────────────────────────────

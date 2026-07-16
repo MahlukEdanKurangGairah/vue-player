@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // App
   getPath: (name) => ipcRenderer.invoke('app:getPath', name),
   fileExists: (filePath) => ipcRenderer.invoke('fs:fileExists', filePath),
+  readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
   
   // Menu events
   onMenuAction: (channel, callback) => {
