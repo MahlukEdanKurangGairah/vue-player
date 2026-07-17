@@ -52,7 +52,7 @@ VPlayer is an Electron 28 desktop media player. Three processes:
 
 - `@tabler/icons-vue` tree-shakes automatically — only imported icons are bundled
 - `bootstrap` JS (tooltips, offcanvas, toast) is imported directly in `src/main.js` as a transitive dependency of `@tabler/core`. It is NOT a direct dependency in `package.json`.
-- `pdfjs-dist` renders PDFs. Worker is imported via `?url` in Vite: `import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'`. The worker chunk (~1.2 MB) is output to `dist-app/assets/`.
+- `pdfjs-dist` renders PDFs. Worker is imported via `?raw` in Vite: `import pdfjsWorkerCode from 'pdfjs-dist/build/pdf.worker.min.mjs?raw'`. The worker is loaded at runtime via blob URL (`URL.createObjectURL`), avoiding `file://` worker loading issues in Electron.
 - `electron-builder` config lives under `"build"` key in `package.json`
 
 ## Legacy code

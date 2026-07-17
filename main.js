@@ -169,7 +169,7 @@ ipcMain.handle('fs:fileExists', (event, filePath) => {
 
 ipcMain.handle('fs:readFile', async (event, filePath) => {
   const buffer = await fs.promises.readFile(filePath);
-  return buffer;
+  return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 });
 
 // ── Window creation ──────────────────────────────────────────────────

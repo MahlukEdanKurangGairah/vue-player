@@ -15,7 +15,6 @@
 		<button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
 		</div>
 		<div class="offcanvas-body d-flex flex-column p-0">
-		<!-- Queue list -->
 		<div class="list-group list-group-flush flex-grow-1 overflow-auto" style="flex: 1; min-height: 0;">
 			<a v-for="(item, i) in playlist"
 				:key="item.path"
@@ -42,7 +41,6 @@
 
 			<hr class="my-0">
 
-			<!-- History -->
 			<div class="d-flex align-items-center justify-content-between px-3 py-2">
 				<small class="text-muted fw-bold text-uppercase">History ({{ playedHistory.length }})</small>
 				<button class="btn btn-icon btn-sm" :disabled="playedHistory.length === 0" @click="playedHistory = []">
@@ -77,271 +75,70 @@
 		@mousemove="wakeControls"
 		@mouseleave="startHideTimer"
 	>
-		<!-- ============ PLAYER VIEW ============ -->
-		<div v-show="currentView === 'player'" style="position: absolute; inset: 0;">
-			<div class="d-flex justify-content-center align-items-center" style="width:100vw; height: 100vh;">
-				<video
-					ref="videoPlayer"
-					style="height: 100%; object-fit: contain; position: relative; z-index: 0;"
-					@timeupdate="onTimeUpdate"
-					@ended="onMediaEnded"
-					@loadedmetadata="onVideoLoaded"
-					@error="onMediaError"
-				></video>
-			</div>
-			<!-- Audio Artwork Overlay -->
-			<div
-				v-if="!isVideo && currentTrack"
-				class="position-absolute d-flex flex-column align-items-center justify-content-center gap-3"
-				style="inset: 0; background: radial-gradient(ellipse at center, rgba(10,10,15,0.92), rgba(0,0,0,0.98)); z-index: 2;"
-			>
-				<div class="card bg-dark border-0" style="width: 220px; height: 220px; border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
-					<div class="card-body d-flex flex-column align-items-center justify-content-center gap-3">
-					<IconDiscFilled :class="isPlaying ? 'text-primary' : 'text-secondary'" size="64" />
-					<div class="d-flex align-items-end gap-1" style="height: 24px;">
-						<div
-						v-for="i in 16"
-						:key="i"
-						class="vis-bar"
-						:class="{ playing: isPlaying }"
-						:style="{ animationDelay: `${(i * 67) % 600}ms` }"
-						/>
-					</div>
-					</div>
-				</div>
-				<div class="text-center px-4" style="max-width: 400px;">
-					<div class="text-white fw-bold fs-5 text-truncate">{{ currentTrack.name }}</div>
-					<div class="text-muted small mt-1">Audio</div>
-				</div>
-			</div>
+		<PlayerView
+			ref="playerViewRef"
+			v-show="currentView === 'player'"
+			:currentTrack="currentTrack"
+			:isVideo="isVideo"
+			:isPlaying="isPlaying"
+			:isShuffle="isShuffle"
+			:repeatMode="repeatMode"
+			:currentSpeed="currentSpeed"
+			:currentTime="currentTime"
+			:duration="duration"
+			:progressPercent="progressPercent"
+			:volume="volume"
+			:controlsVisible="controlsVisible"
+			@timeupdate="onTimeUpdate"
+			@ended="onMediaEnded"
+			@videoloaded="onVideoLoaded"
+			@error="onMediaError"
+			@seek="seekProgress"
+			@progressMouseDown="onProgressMouseDown"
+			@prev="prevTrack"
+			@togglePlay="togglePlay"
+			@next="nextTrack"
+			@stop="stopMedia"
+			@toggleShuffle="toggleShuffle"
+			@toggleRepeat="toggleRepeat"
+			@cycleSpeed="cycleSpeed"
+			@toggleMute="toggleMute"
+			@setVolume="setVolume"
+			@togglePiP="togglePiP"
+			@toggleFullscreen="toggleFullscreen"
+			@openPlaylist="openPlaylist"
+			@resetHideTimer="resetHideTimer"
+			@startHideTimer="startHideTimer"
+		/>
 
-			<!-- Empty State -->
-			<div
-				v-if="!currentTrack"
-				class="position-absolute d-flex flex-column align-items-center justify-content-center gap-3"
-				style="inset: 0; z-index: 1; pointer-events: none;"
-			>
-			<IconPlayerPlayFilled size="96" class="text-secondary" style="opacity: 0.3;" />
-			<div class="text-muted fs-4 fw-medium">AdjadTea-Player</div>
-			<div class="text-muted small" style="opacity: 0.5;">Drop media files or File → Open</div>
-			</div>
+		<ImageViewer
+			v-show="currentView === 'image'"
+			:images="imageGallery"
+			:currentIndex="currentImageIndex"
+			:controlsVisible="controlsVisible"
+			@back="backToPlayer"
+			@prev="prevImage"
+			@next="nextImage"
+			@resetHideTimer="resetHideTimer"
+			@startHideTimer="startHideTimer"
+		/>
 
-			<!-- Controls Overlay -->
-			<div
-				v-if="controlsVisible"
-				class="controls-overlay position-absolute bottom-0 start-0 end-0 px-3 pb-3 pt-2 d-flex flex-column justify-content-end"
-				style="height: 15%; z-index: 10; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 60%, transparent 100%); pointer-events: auto;"
-				@mouseenter="resetHideTimer"
-				@mouseleave="startHideTimer"
-			>
-			<!-- Title -->
-			<div v-if="currentTrack" class="d-flex align-items-center gap-2 mb-2">
-				<component :is="isVideo ? IconMovie : IconMusic" class="text-primary" />
-				<span class="text-white small fw-medium text-truncate">{{ currentTrack.name }}</span>
-			</div>
+		<PhotoGrid
+			v-show="currentView === 'photogrid'"
+			:images="imageGallery"
+			@back="backToPlayer"
+			@select="showImage"
+		/>
 
-			<!-- Progress Bar -->
-			<div
-				class="d-flex align-items-center gap-2 mb-1"
-				style="cursor: pointer;"
-				@click="seekProgress"
-				@mousedown="onProgressMouseDown"
-			>
-				<span class="text-white-50 small fw-medium" style="min-width: 40px; text-align: right;">{{ formatTime(currentTime) }}</span>
-				<div class="progress flex-grow-1 vlc-progress" style="height: 4px; --tblr-progress-height: 4px;" ref="progressBar">
-				<div class="progress-bar" :style="{ width: progressPercent + '%' }" style="background: #39ff14;"></div>
-				</div>
-				<span class="text-white-50 small fw-medium" style="min-width: 40px;">{{ formatTime(duration) }}</span>
-			</div>
-
-			<!-- Controls Row -->
-			<div class="d-flex align-items-center" style="min-height: 40px;">
-				<!-- Transport -->
-				<div class="btn-list">
-				<button class="btn btn-icon text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Previous" @click="prevTrack">
-					<IconPlayerSkipBackFilled />
-				</button>
-				<button class="btn btn-icon text-white" :title="isPlaying ? 'Pause' : 'Play'" @click="togglePlay">
-					<component :is="isPlaying ? IconPlayerPauseFilled : IconPlayerPlayFilled" size="28" />
-				</button>
-				<button class="btn btn-icon text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Next" @click="nextTrack">
-					<IconPlayerSkipForwardFilled />
-				</button>
-				<button class="btn btn-icon text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Stop" @click="stopMedia">
-					<IconPlayerStopFilled size="18" />
-				</button>
-				</div>
-
-				<div class="flex-grow-1"></div>
-
-				<!-- Shuffle / Repeat -->
-				<div class="btn-list">
-				<button
-					class="btn btn-icon btn-sm"
-					:class="isShuffle ? 'text-primary' : 'text-white'"
-					data-bs-toggle="tooltip" data-bs-placement="top" title="Shuffle"
-					@click="toggleShuffle"
-				>
-					<IconArrowsShuffle />
-				</button>
-				<button
-					class="btn btn-icon btn-sm"
-					:class="repeatMode > 0 ? 'text-primary' : 'text-white'"
-					data-bs-toggle="tooltip" data-bs-placement="top" :title="repeatTooltip"
-					@click="toggleRepeat"
-				>
-					<component :is="repeatMode === 2 ? IconRepeatOnce : IconRepeat" />
-				</button>
-				</div>
-
-				<div class="flex-grow-1"></div>
-
-				<!-- Right: Speed, Volume, Fullscreen, Playlist -->
-				<div class="btn-list d-flex align-items-center">
-				<button class="btn btn-icon btn-sm text-white fw-bold small" @click="cycleSpeed" style="min-width: 36px; font-size: 11px;">
-					{{ currentSpeed }}×
-				</button>
-
-				<button
-					class="btn btn-icon btn-sm text-white"
-					data-bs-toggle="tooltip" data-bs-placement="top"
-					:title="volume === 0 ? 'Unmute' : 'Mute'"
-					@click="toggleMute"
-				>
-					<component :is="volumeIcon" />
-				</button>
-
-				<input
-					type="range"
-					class="form-range"
-					style="width: 70px; --tblr-form-range-track-bg: rgba(255,255,255,0.2);"
-					:value="volume"
-					:min="0"
-					:max="100"
-					:step="1"
-					@input="setVolume(Number($event.target.value))"
-				>
-
-				<button v-if="isVideo" class="btn btn-icon btn-sm text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Picture in Picture" @click="togglePiP">
-					<IconPictureInPicture />
-				</button>
-
-				<button class="btn btn-icon btn-sm text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Fullscreen" @click="toggleFullscreen">
-					<IconArrowsMaximize />
-				</button>
-
-				<button class="btn btn-icon btn-sm text-white" data-bs-toggle="tooltip" data-bs-placement="top" title="Playlist" @click="openPlaylist">
-					<IconPlaylist />
-				</button>
-				</div>
-			</div>
-			</div>
-		</div>
-
-		<!-- ============ IMAGE VIEWER ============ -->
-		<div v-show="currentView === 'image' && imageGallery.length > 0" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #000;">
-			<img
-				:src="imageGallery[currentImageIndex]?.src"
-				:alt="imageGallery[currentImageIndex]?.name"
-				style="max-width: 100%; max-height: 100vh; object-fit: contain; user-select: none;"
-				draggable="false"
-			/>
-			<!-- Image controls overlay (auto-hiding) -->
-			<div
-				v-if="controlsVisible"
-				class="position-absolute start-0 end-0 px-3 d-flex align-items-center"
-				style="top: 0; height: 64px; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 70%, transparent 100%); pointer-events: auto;"
-				@mouseenter="resetHideTimer"
-				@mouseleave="startHideTimer"
-			>
-				<button class="btn btn-icon text-white me-2" title="Back" @click="backToPlayer">
-					<IconArrowLeft />
-				</button>
-				<span class="text-white small fw-medium text-truncate flex-grow-1">
-					{{ imageGallery[currentImageIndex]?.name }}
-				</span>
-				<span class="text-white-50 small me-3">{{ currentImageIndex + 1 }} / {{ imageGallery.length }}</span>
-				<div class="btn-list">
-					<button class="btn btn-icon text-white" title="Previous" :disabled="currentImageIndex <= 0" @click="prevImage">
-						<IconChevronLeft />
-					</button>
-					<button class="btn btn-icon text-white" title="Next" :disabled="currentImageIndex >= imageGallery.length - 1" @click="nextImage">
-						<IconChevronRight />
-					</button>
-				</div>
-			</div>
-		</div>
-
-		<!-- ============ PHOTO GRID ============ -->
-		<div v-show="currentView === 'photogrid'" style="position: absolute; inset: 0; overflow: auto; background: #0a0a0f;">
-			<div class="d-flex align-items-center gap-2 px-3 py-3 position-sticky top-0" style="background: #0a0a0f; z-index: 5; border-bottom: 1px solid rgba(255,255,255,0.06);">
-				<button class="btn btn-icon text-white" title="Back" @click="backToPlayer">
-					<IconArrowLeft />
-				</button>
-				<span class="text-white fw-medium">Photos ({{ imageGallery.length }})</span>
-				<div class="flex-grow-1"></div>
-				<button class="btn btn-icon btn-sm text-white-50" title="Thumbnail Size">
-					<IconPhoto />
-				</button>
-			</div>
-			<div class="photo-grid p-3">
-				<div
-					v-for="(img, i) in imageGallery"
-					:key="i"
-					class="photo-item"
-					@click="showImage(i)"
-				>
-					<img :src="img.src" :alt="img.name" loading="lazy" />
-					<div class="photo-name">{{ img.name }}</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- ============ PDF VIEWER ============ -->
-		<div v-show="currentView === 'pdf'" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; background: #1a1a1f; overflow: auto;">
-			<!-- PDF top bar -->
-			<div
-				v-if="controlsVisible"
-				class="d-flex align-items-center gap-3 px-3 py-2 w-100 position-sticky top-0"
-				style="background: rgba(0,0,0,0.85); z-index: 5; min-height: 48px;"
-				@mouseenter="resetHideTimer"
-				@mouseleave="startHideTimer"
-			>
-				<button class="btn btn-icon btn-sm text-white" title="Back" @click="backToPlayer">
-					<IconArrowLeft />
-				</button>
-				<span class="text-white small fw-medium text-truncate flex-grow-1">{{ pdfFileName }}</span>
-				<div class="btn-list">
-					<button class="btn btn-icon btn-sm text-white" title="Zoom Out" :disabled="pdfScale <= 0.5" @click="zoomPDF(-0.25)">
-						<IconZoomOut />
-					</button>
-					<span class="text-white-50 small" style="min-width: 40px; text-align: center;">{{ Math.round(pdfScale * 100) }}%</span>
-					<button class="btn btn-icon btn-sm text-white" title="Zoom In" :disabled="pdfScale >= 4" @click="zoomPDF(0.25)">
-						<IconZoomIn />
-					</button>
-				</div>
-			</div>
-			<!-- Canvas for PDF rendering -->
-			<div v-if="pdfLoading" class="d-flex align-items-center justify-content-center flex-grow-1">
-				<div class="spinner-border text-primary" role="status"></div>
-			</div>
-			<div v-else class="d-flex flex-column align-items-center py-3" style="flex: 1;">
-				<canvas ref="pdfCanvas" style="box-shadow: 0 4px 24px rgba(0,0,0,0.5);"></canvas>
-				<!-- Page navigation -->
-				<div class="d-flex align-items-center gap-3 mt-3 mb-4">
-					<button class="btn btn-icon text-white" title="Previous Page" :disabled="pdfPage <= 1" @click="prevPDFPage">
-						<IconChevronLeft />
-					</button>
-					<span class="text-white small">
-						<input type="number" class="form-control form-control-sm d-inline-block text-center" style="width: 50px; --tblr-form-control-bg: #222; --tblr-form-control-color: #fff; --tblr-form-control-border-color: #333;" :value="pdfPage" :min="1" :max="pdfTotalPages" @change="goToPDFPage($event.target.value)" />
-						<span class="mx-1">/</span> {{ pdfTotalPages }}
-					</span>
-					<button class="btn btn-icon text-white" title="Next Page" :disabled="pdfPage >= pdfTotalPages" @click="nextPDFPage">
-						<IconChevronRight />
-					</button>
-				</div>
-			</div>
-		</div>
+		<PdfViewer
+			v-show="currentView === 'pdf'"
+			:filePath="pdfFilePath"
+			:fileName="pdfFileName"
+			:controlsVisible="controlsVisible"
+			@back="backToPlayer"
+			@resetHideTimer="resetHideTimer"
+			@startHideTimer="startHideTimer"
+		/>
 
 		<!-- ============ DROP OVERLAY ============ -->
 		<div
@@ -382,30 +179,25 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { Toast, Offcanvas, Tooltip } from 'bootstrap';
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-
+import PlayerView from './components/PlayerView.vue';
+import ImageViewer from './components/ImageViewer.vue';
+import PhotoGrid from './components/PhotoGrid.vue';
+import PdfViewer from './components/PdfViewer.vue';
 import {
-  IconPlayerPlayFilled, IconPlayerPauseFilled,
-  IconPlayerSkipBackFilled, IconPlayerSkipForwardFilled, IconPlayerStopFilled,
-  IconArrowsShuffle, IconRepeat, IconRepeatOnce,
-  IconVolume, IconVolumeOff,
-  IconArrowsMaximize, IconPictureInPicture,
+  IconPlayerPlayFilled,
   IconPlaylist, IconFilePlus, IconFolderPlus, IconPlaylistX,
-  IconMovie, IconMusic, IconDiscFilled,
-  IconTrash, IconFileMusic, IconX,
-  IconArrowLeft, IconChevronLeft, IconChevronRight,
-  IconPhoto, IconZoomIn, IconZoomOut
+  IconMovie, IconMusic,
+  IconTrash, IconFileMusic, IconX
 } from '@tabler/icons-vue';
 
 // ==================== REFS ====================
-const videoPlayer = ref(null);
+const playerViewRef = ref(null);
 const audioPlayer = ref(null);
 const errorToast = ref(null);
 const playlistOffcanvas = ref(null);
-const progressBar = ref(null);
-const pdfCanvas = ref(null);
+
+const videoPlayer = computed(() => playerViewRef.value?.videoEl ?? null);
+const progressBar = computed(() => playerViewRef.value?.progressEl ?? null);
 
 // ==================== STATE ====================
 const playlist = ref([]);
@@ -429,12 +221,8 @@ const snackbar = ref({ show: false, message: '' });
 const currentView = ref('player');
 const imageGallery = ref([]);
 const currentImageIndex = ref(-1);
-const pdfDoc = ref(null);
-const pdfPage = ref(1);
-const pdfTotalPages = ref(0);
-const pdfScale = ref(1.5);
-const pdfLoading = ref(false);
 const pdfFileName = ref('');
+const pdfFilePath = ref('');
 
 const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 const AUDIO_EXTS = ['mp3', 'flac', 'ogg', 'wav', 'aac', 'm4a', 'opus', 'wma'];
@@ -452,17 +240,6 @@ const currentTrack = computed(() => {
     return playlist.value[currentIndex.value];
   }
   return null;
-});
-
-const volumeIcon = computed(() => {
-  if (volume.value === 0) return IconVolumeOff;
-  return IconVolume;
-});
-
-const repeatTooltip = computed(() => {
-  if (repeatMode.value === 0) return 'Repeat: Off';
-  if (repeatMode.value === 1) return 'Repeat: All';
-  return 'Repeat: One';
 });
 
 // ==================== AUTO-HIDE CONTROLS ====================
@@ -523,13 +300,6 @@ function isAudioFile(fp) { return AUDIO_EXTS.includes(getFileExtension(fp)); }
 function isImageFile(fp) { return IMAGE_EXTS.includes(getFileExtension(fp)); }
 function isPDFFile(fp) { return getFileExtension(fp) === PDF_EXT; }
 
-function formatTime(seconds) {
-  if (isNaN(seconds) || !isFinite(seconds)) return '00:00';
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
 function getActiveMedia() { return isVideo.value ? videoPlayer.value : audioPlayer.value; }
 
 function getNowTime() {
@@ -564,14 +334,13 @@ function handleFiles(filePaths) {
   const pdfs = filePaths.filter(isPDFFile);
   const media = filePaths.filter(fp => isVideoFile(fp) || isAudioFile(fp));
 
-  // Single PDF → PDF viewer
   if (pdfs.length === 1 && images.length === 0 && media.length === 0) {
     currentView.value = 'pdf';
-    loadPDF(pdfs[0]);
+    pdfFilePath.value = pdfs[0];
+    pdfFileName.value = getFullFileName(pdfs[0]);
     return;
   }
 
-  // Images → photo grid or image viewer
   if (images.length > 0 && media.length === 0) {
     imageGallery.value = images.map(fp => ({
       path: fp,
@@ -587,13 +356,11 @@ function handleFiles(filePaths) {
     return;
   }
 
-  // Media files → player
   if (media.length > 0) {
     currentView.value = 'player';
     addToPlaylist(media);
   }
 
-  // Also add any images to gallery if media also present
   if (images.length > 0) {
     const newImages = images.map(fp => ({
       path: fp,
@@ -641,89 +408,11 @@ function showImage(index) {
 }
 
 function prevImage() {
-  if (currentImageIndex.value > 0) {
-    currentImageIndex.value--;
-  }
+  if (currentImageIndex.value > 0) currentImageIndex.value--;
 }
 
 function nextImage() {
-  if (currentImageIndex.value < imageGallery.value.length - 1) {
-    currentImageIndex.value++;
-  }
-}
-
-// ==================== PDF VIEWER ====================
-async function loadPDF(filePath) {
-  pdfLoading.value = true;
-  pdfFileName.value = getFullFileName(filePath);
-  pdfPage.value = 1;
-  pdfTotalPages.value = 0;
-  pdfDoc.value = null;
-
-  try {
-    let data;
-    if (window.electronAPI) {
-      data = await window.electronAPI.readFile(filePath);
-    } else {
-      const resp = await fetch(`file://${filePath}`);
-      data = await resp.arrayBuffer();
-    }
-    const pdf = await pdfjsLib.getDocument({ data }).promise;
-    pdfDoc.value = pdf;
-    pdfTotalPages.value = pdf.numPages;
-    await renderPDFPage(1);
-  } catch (err) {
-    console.error('PDF load error:', err);
-    showError('Failed to load PDF file');
-    backToPlayer();
-  } finally {
-    pdfLoading.value = false;
-  }
-}
-
-async function renderPDFPage(pageNum) {
-  if (!pdfDoc.value) return;
-  try {
-    const page = await pdfDoc.value.getPage(pageNum);
-    const canvas = pdfCanvas.value;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const viewport = page.getViewport({ scale: pdfScale.value });
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-    pdfPage.value = pageNum;
-  } catch (err) {
-    console.error('PDF render error:', err);
-    showError('Failed to render PDF page');
-  }
-}
-
-function prevPDFPage() {
-  if (pdfPage.value > 1) {
-    pdfPage.value--;
-    renderPDFPage(pdfPage.value);
-  }
-}
-
-function nextPDFPage() {
-  if (pdfPage.value < pdfTotalPages.value) {
-    pdfPage.value++;
-    renderPDFPage(pdfPage.value);
-  }
-}
-
-function goToPDFPage(val) {
-  const n = parseInt(val, 10);
-  if (n >= 1 && n <= pdfTotalPages.value) {
-    pdfPage.value = n;
-    renderPDFPage(n);
-  }
-}
-
-function zoomPDF(delta) {
-  pdfScale.value = Math.max(0.5, Math.min(4, pdfScale.value + delta));
-  renderPDFPage(pdfPage.value);
+  if (currentImageIndex.value < imageGallery.value.length - 1) currentImageIndex.value++;
 }
 
 // ==================== MEDIA CONTROL ====================
@@ -892,13 +581,11 @@ function onDrop(e) {
 function onKeyDown(e) {
 	if (e.target.tagName === 'INPUT') return;
 
-  // Global view shortcuts
   if (e.code === 'Escape') {
     if (document.pictureInPictureElement) { document.exitPictureInPicture(); return; }
     if (currentView.value !== 'player') { backToPlayer(); return; }
   }
 
-  // Player-specific shortcuts
   if (currentView.value === 'player') {
     switch (e.code) {
       case 'Space': e.preventDefault(); togglePlay(); break;
@@ -911,7 +598,6 @@ function onKeyDown(e) {
     }
   }
 
-  // Image viewer shortcuts
   if (currentView.value === 'image') {
     switch (e.code) {
       case 'ArrowLeft': prevImage(); break;
@@ -920,13 +606,8 @@ function onKeyDown(e) {
     }
   }
 
-  // PDF viewer shortcuts
   if (currentView.value === 'pdf') {
-    switch (e.code) {
-      case 'ArrowLeft': prevPDFPage(); break;
-      case 'ArrowRight': nextPDFPage(); break;
-      case 'KeyF': toggleFullscreen(); break;
-    }
+    if (e.code === 'KeyF') toggleFullscreen();
   }
 }
 
@@ -962,7 +643,6 @@ onMounted(() => {
   document.addEventListener('mouseup', onMouseUp);
   document.addEventListener('mousemove', onMouseMove);
 
-  // Init Bootstrap tooltips
   document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new Tooltip(el));
 
   setVolume(80);
@@ -985,11 +665,9 @@ html, body, #app { height: 100%; overflow: hidden; }
 
 .video-area { cursor: default; }
 
-/* Progress hover like VLC */
 .vlc-progress { cursor: pointer; }
 .vlc-progress:hover { height: 6px !important; --tblr-progress-height: 6px; }
 
-/* Visualizer */
 .vis-bar {
   width: 3px; height: 3px;
   background: rgba(255,255,255,0.15);
@@ -1005,20 +683,16 @@ html, body, #app { height: 100%; overflow: hidden; }
   100% { height: 20px; }
 }
 
-/* Controls overlay */
 .controls-overlay { pointer-events: auto; }
 .controls-overlay .btn-icon { color: rgba(255,255,255,0.85) !important; }
 .controls-overlay .btn-icon:hover { color: #fff !important; background: rgba(255,255,255,0.1); }
 .controls-overlay .btn-icon.text-primary { color: var(--tblr-primary, #7c3aed) !important; }
 
-/* Remove button in playlist */
 .list-group-item .remove-btn { opacity: 0; transition: opacity 150ms; }
 .list-group-item:hover .remove-btn { opacity: 1; }
 
-/* Offcanvas playlist */
 #playlistOffcanvas .offcanvas-body { display: flex; flex-direction: column; }
 
-/* Photo Grid */
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -1045,6 +719,12 @@ html, body, #app { height: 100%; overflow: hidden; }
   height: 100%;
   object-fit: cover;
   display: block;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  background: #1a1a1f;
+}
+.photo-item img[src] {
+  opacity: 1;
 }
 .photo-name {
   padding: 4px 8px;
