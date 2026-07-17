@@ -18,7 +18,7 @@
 | 🎵 **Audio Player** | Artwork display + animated bar visualizer overlay |
 | 🖼 **Image Viewer** | Fullscreen image viewer with prev/next navigation |
 | 🗂 **Photo Grid** | Grid thumbnails when opening a folder of images |
-| 📄 **PDF Reader** | Built-in PDF reader with page nav, zoom, pdf.js rendering |
+| 📄 **PDF Reader** | Chromium built-in PDF viewer via `<embed>` |
 | 📂 **File Support** | MP4, WebM, MKV, AVI, MOV, MP3, FLAC, OGG, WAV, AAC, M4A, Opus, JPG, PNG, GIF, WebP, SVG, PDF |
 | 📋 **Playlist** | Offcanvas drawer (right) — add/remove/clear, click to play |
 | 📜 **History** | Last 50 played tracks in offcanvas drawer |
@@ -62,8 +62,8 @@ Output goes to `dist/` folder.
 | Key | Action |
 |---|---|
 | `Space` | Play / Pause |
-| `←` | Seek back 5s / Prev image / Prev PDF page |
-| `→` | Seek forward 5s / Next image / Next PDF page |
+| `←` | Seek back 5s / Prev image |
+| `→` | Seek forward 5s / Next image |
 | `Ctrl` + `←` | Previous track |
 | `Ctrl` + `→` | Next track |
 | `↑` | Volume up |
@@ -85,8 +85,13 @@ adjadteaplayer/
 ├── package.json         # Dependencies & build config
 ├── vite.config.js       # Vite config (Vue plugin, chunk splitting)
 ├── src/
-│   ├── main.js          # Vue app entry — imports Tabler CSS + Bootstrap JS
-│   └── App.vue          # Full UI: video area, controls overlay, playlist offcanvas
+│   ├── main.js              # Vue app entry — imports Tabler CSS + Bootstrap JS
+│   ├── App.vue              # Root component — state, file routing, keyboard, menu
+│   └── components/
+│       ├── PlayerView.vue   # Video/audio player + controls overlay
+│       ├── ImageViewer.vue  # Fullscreen single image viewer
+│       ├── PhotoGrid.vue    # Lazy-loaded image thumbnails grid
+│       └── PdfViewer.vue    # Chromium PDF embed + top bar
 ├── legacy/              # Original vanilla-JS implementation (reference only)
 │   ├── renderer.js
 │   └── style.css
@@ -100,7 +105,7 @@ adjadteaplayer/
 
 - **Main Process** (`main.js`) — Window management, native menus (File/Playback/View/Theme), file dialogs, folder scanning, IPC handlers
 - **Preload** (`preload.js`) — Exposes `window.electronAPI` via context bridge with whitelisted channels
-- **Renderer** — Vue 3 app built with Vite. Uses Tabler CSS framework + Bootstrap 5. Tabler Icons rendered as Vue components (`@tabler/icons-vue`). State managed via Vue Composition API (`ref`, `computed`) in a single `<script setup>` block. Four view modes: player, image viewer, photo grid, PDF reader.
+- **Renderer** — Vue 3 app built with Vite. Uses Tabler CSS framework + Bootstrap 5. Tabler Icons rendered as Vue components (`@tabler/icons-vue`). State managed via Vue Composition API (`ref`, `computed`). Four view modes (player, image viewer, photo grid, PDF reader) split into separate Vue SFC components. Photo grid uses `lozad` for lazy image loading.
 
 ### UI Design
 
@@ -142,7 +147,7 @@ PDF
 - **[Vue 3](https://vuejs.org/)** — UI framework (Composition API)
 - **[Tabler](https://tabler.io/)** — Bootstrap 5 CSS framework + UI kit
 - **[Tabler Icons Vue](https://www.npmjs.com/package/@tabler/icons-vue)** — SVG icon components
-- **[pdfjs-dist](https://mozilla.github.io/pdf.js/)** — PDF rendering engine
+- **[lozad](https://apoorv.pro/lozad.js/)** — Lazy loading for image thumbnails
 - **[Vite 5](https://vitejs.dev/)** — Build tool & dev server
 - **[Bun](https://bun.sh/)** — Package manager & runtime
 - **[electron-builder](https://www.electron.build/)** — Build/packaging
