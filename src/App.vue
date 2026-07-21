@@ -140,6 +140,12 @@
 			@startHideTimer="startHideTimer"
 		/>
 
+		<BrowserView
+			ref="browserViewRef"
+			v-show="currentView === 'browser'"
+			@back="backToPlayer"
+		/>
+
 		<!-- ============ DROP OVERLAY ============ -->
 		<div
 			v-if="dropActive"
@@ -183,6 +189,7 @@ import PlayerView from './components/PlayerView.vue';
 import ImageViewer from './components/ImageViewer.vue';
 import PhotoGrid from './components/PhotoGrid.vue';
 import PdfViewer from './components/PdfViewer.vue';
+import BrowserView from './components/BrowserView.vue';
 import {
   IconPlayerPlayFilled,
   IconPlaylist, IconFilePlus, IconFolderPlus, IconPlaylistX,
@@ -192,6 +199,7 @@ import {
 
 // ==================== REFS ====================
 const playerViewRef = ref(null);
+const browserViewRef = ref(null);
 const audioPlayer = ref(null);
 const errorToast = ref(null);
 const playlistOffcanvas = ref(null);
@@ -283,7 +291,10 @@ function showError(msg) {
 }
 
 // ==================== HELPERS ====================
-function getFileExtension(fp) { return fp.split('.').pop().toLowerCase(); }
+function getFileExtension(fp) {
+  const clean = fp.split('?')[0].split('#')[0];
+  return clean.split('.').pop().toLowerCase();
+}
 
 function getFileName(fp) {
   const parts = fp.replace(/\\/g, '/').split('/');
@@ -422,7 +433,10 @@ function playIndex(index) {
   isVideo.value = item.type === 'video';
   currentIndex.value = index;
   stopCurrentMedia();
-  getActiveMedia().src = `file://${item.path}`;
+  const src = item.path.startsWith('http://') || item.path.startsWith('https://')
+    ? item.path
+    : `file://${item.path}`;
+  getActiveMedia().src = src;
   getActiveMedia().load();
 }
 
@@ -567,6 +581,31 @@ async function openFolder() {
   if (window.electronAPI) { const files = await window.electronAPI.openFolder(); if (files.length > 0) handleFiles(files); }
 }
 
+function openUrl() {
+  const url = window.prompt('Enter URL (video, audio, image, or PDF):');
+  if (!url) return;
+  const trimmed = url.trim();
+  if (!trimmed) return;
+
+  const ext = getFileExtension(trimmed.split('?')[0].split('#')[0]);
+  const name = decodeURIComponent(trimmed.split('/').pop().split('?')[0]) || trimmed;
+
+  if (isImageFile(trimmed)) {
+    imageGallery.value = [{ path: trimmed, name, src: trimmed }];
+    currentImageIndex.value = 0;
+    currentView.value = 'image';
+  } else if (ext === PDF_EXT) {
+    pdfFilePath.value = trimmed;
+    pdfFileName.value = name;
+    currentView.value = 'pdf';
+  } else if (AUDIO_EXTS.includes(ext) || VIDEO_EXTS.includes(ext)) {
+    currentView.value = 'player';
+    addToPlaylist([trimmed]);
+  } else {
+    showError('Unsupported URL format');
+  }
+}
+
 // ==================== DRAG & DROP ====================
 function onDragEnter(e) { e.preventDefault(); dragCounter++; if (dragCounter === 1) dropActive.value = true; }
 function onDragLeave(e) { e.preventDefault(); dragCounter--; if (dragCounter === 0) dropActive.value = false; }
@@ -584,6 +623,15 @@ function onKeyDown(e) {
   if (e.code === 'Escape') {
     if (document.pictureInPictureElement) { document.exitPictureInPicture(); return; }
     if (currentView.value !== 'player') { backToPlayer(); return; }
+  }
+
+  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyB') {
+    e.preventDefault();
+    currentView.value = 'browser';
+    nextTick(() => {
+      if (browserViewRef.value?.tabs?.length === 0) browserViewRef.value.addTab();
+    });
+    return;
   }
 
   if (currentView.value === 'player') {
@@ -620,6 +668,13 @@ function setupMenuListeners() {
     window.electronAPI.onMenuAction('playlist-prev', prevTrack);
     window.electronAPI.onMenuAction('files-opened', (filePaths) => { handleFiles(filePaths); });
     window.electronAPI.onMenuAction('theme-changed', (theme) => { currentTheme.value = theme; });
+    window.electronAPI.onMenuAction('open-url', openUrl);
+    window.electronAPI.onMenuAction('open-browser', () => {
+      currentView.value = 'browser';
+      nextTick(() => {
+        if (browserViewRef.value?.tabs?.length === 0) browserViewRef.value.addTab();
+      });
+    });
   }
 }
 

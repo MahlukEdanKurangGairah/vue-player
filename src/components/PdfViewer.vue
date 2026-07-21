@@ -13,7 +13,7 @@
       <span class="text-white small fw-medium text-truncate flex-grow-1">{{ fileName }}</span>
     </div>
     <embed
-      :src="'file://' + filePath"
+      :src="embedSrc"
       type="application/pdf"
       style="flex: 1; width: 100%; border: none;"
     />
@@ -21,12 +21,19 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { IconArrowLeft } from '@tabler/icons-vue';
 
-defineProps({
+const props = defineProps({
   filePath: String,
   fileName: String,
   controlsVisible: Boolean
+});
+
+const embedSrc = computed(() => {
+  if (props.filePath.startsWith('http://') || props.filePath.startsWith('https://'))
+    return props.filePath;
+  return 'file://' + props.filePath;
 });
 
 defineEmits(['back', 'resetHideTimer', 'startHideTimer']);

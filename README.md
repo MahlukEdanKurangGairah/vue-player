@@ -19,6 +19,8 @@
 | 🖼 **Image Viewer** | Fullscreen image viewer with prev/next navigation |
 | 🗂 **Photo Grid** | Grid thumbnails when opening a folder of images |
 | 📄 **PDF Reader** | Chromium built-in PDF viewer via `<embed>` |
+| 🌐 **Browser** | Multi-tab web browser with persistent cookies/session |
+| 🔗 **Open URL** | Open remote media/image/PDF via URL |
 | 📂 **File Support** | MP4, WebM, MKV, AVI, MOV, MP3, FLAC, OGG, WAV, AAC, M4A, Opus, JPG, PNG, GIF, WebP, SVG, PDF |
 | 📋 **Playlist** | Offcanvas drawer (right) — add/remove/clear, click to play |
 | 📜 **History** | Last 50 played tracks in offcanvas drawer |
@@ -70,9 +72,11 @@ Output goes to `dist/` folder.
 | `↓` | Volume down |
 | `M` | Mute / Unmute |
 | `F` | Toggle fullscreen |
-| `Esc` | Back to player (from image/PDF view) / Exit PiP |
+| `Esc` | Back to player (from any view) / Exit PiP |
 | `Ctrl` + `O` | Open file(s) |
 | `Ctrl` + `Shift` + `O` | Open folder |
+| `Ctrl` + `U` | Open URL |
+| `Ctrl` + `B` | Open browser |
 | `Ctrl` + `.` | Stop playback |
 
 ## 🧱 Project Structure
@@ -91,7 +95,8 @@ adjadteaplayer/
 │       ├── PlayerView.vue   # Video/audio player + controls overlay
 │       ├── ImageViewer.vue  # Fullscreen single image viewer
 │       ├── PhotoGrid.vue    # Lazy-loaded image thumbnails grid
-│       └── PdfViewer.vue    # Chromium PDF embed + top bar
+│       ├── PdfViewer.vue    # Chromium PDF embed + top bar
+│       └── BrowserView.vue  # Multi-tab browser with persistent sessions
 ├── legacy/              # Original vanilla-JS implementation (reference only)
 │   ├── renderer.js
 │   └── style.css

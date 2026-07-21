@@ -103,6 +103,11 @@ function createCustomMenu() {
       label: 'File',
       submenu: [
         {
+          label: 'Open URL',
+          accelerator: 'CmdOrCtrl+U',
+          click: () => sendToRenderer('open-url')
+        },
+        {
           label: 'Open File',
           accelerator: 'CmdOrCtrl+O',
           click: menuOpenFile
@@ -129,6 +134,11 @@ function createCustomMenu() {
       label: 'View',
       submenu: [
         {
+          label: 'Browser',
+          accelerator: 'CmdOrCtrl+B',
+          click: () => sendToRenderer('open-browser')
+        },
+        { type: 'separator' },
           label: 'Theme',
           submenu: [
             {
@@ -185,7 +195,8 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      webviewTag: true
     }
   });
 

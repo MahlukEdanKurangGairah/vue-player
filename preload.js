@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Menu events
   onMenuAction: (channel, callback) => {
-    const validChannels = ['playback-toggle', 'playback-stop', 'playlist-next', 'playlist-prev', 'files-opened', 'theme-changed'];
+    const validChannels = ['playback-toggle', 'playback-stop', 'playlist-next', 'playlist-prev', 'files-opened', 'theme-changed', 'open-url', 'open-browser'];
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (event, ...args) => callback(...args));
     }
